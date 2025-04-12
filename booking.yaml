@@ -1,0 +1,13 @@
+username: "Your Student ID"
+password: "Your Password"
+default:
+  date: "2025-04-13"
+  starttime: "08:00:00"
+  endtime: "09:00:00"
+  changdibh: 122
+  choosetime: 608
+  partnerCardtype: 1
+option1:
+  choosetime: 606
+option2:
+  choosetime: 609

@@ -1,0 +1,335 @@
+diff --git a/Siamese_pytorch/nets/siamese.py b/Siamese_pytorch/nets/siamese.py
+index db4be51..fc8f919 100644
+--- a/Siamese_pytorch/nets/siamese.py
++++ b/Siamese_pytorch/nets/siamese.py
+@@ -1,7 +1,7 @@
+ import torch
+ import torch.nn as nn
+ 
+-from nets.vgg import VGG16
++from Captcha_Identifier.Siamese_pytorch.nets.vgg import VGG16
+ 
+ 
+ def get_img_output_length(width, height):
+@@ -13,15 +13,15 @@ def get_img_output_length(width, height):
+         for i in range(5):
+             input_length = (input_length + 2 * padding[i] - filter_sizes[i]) // stride + 1
+         return input_length
+-    return get_output_length(width) * get_output_length(height) 
+-    
++    return get_output_length(width) * get_output_length(height)
++
+ class Siamese(nn.Module):
+     def __init__(self, input_shape, pretrained=False):
+         super(Siamese, self).__init__()
+         self.vgg = VGG16(pretrained, 3)
+         del self.vgg.avgpool
+         del self.vgg.classifier
+-        
++
+         flat_shape = 512 * get_img_output_length(input_shape[1], input_shape[0])
+         self.fully_connect1 = torch.nn.Linear(flat_shape, 512)
+         self.fully_connect2 = torch.nn.Linear(512, 1)
+@@ -32,10 +32,10 @@ class Siamese(nn.Module):
+         #   我们将两个输入传入到主干特征提取网络
+         #------------------------------------------#
+         x1 = self.vgg.features(x1)
+-        x2 = self.vgg.features(x2)   
++        x2 = self.vgg.features(x2)
+         #-------------------------#
+         #   相减取绝对值，取l1距离
+-        #-------------------------#     
++        #-------------------------#
+         x1 = torch.flatten(x1, 1)
+         x2 = torch.flatten(x2, 1)
+         x = torch.abs(x1 - x2)
+diff --git a/captcha_locator.py b/captcha_locator.py
+index 3b82623..f9d5202 100644
+--- a/captcha_locator.py
++++ b/captcha_locator.py
+@@ -3,9 +3,9 @@ import base64
+ from io import BytesIO
+ from PIL import Image
+ 
+-from word_detect import WordDetector
+-from siamese_predict import Siamese
+-from gen_word_img import generate_character_image
++from Captcha_Identifier.word_detect import WordDetector
++from Captcha_Identifier.siamese_predict import Siamese
++from Captcha_Identifier.gen_word_img import generate_character_image
+ 
+ class CaptchaLocator(object):
+ 
+@@ -36,7 +36,7 @@ class CaptchaLocator(object):
+             position_max = []
+             for i, target in enumerate(targets):
+                 similarity = self.siamese.detect_image(word_image, target)
+-                if similarity > similarity_max:
++                if similarity > similarity_max and positions[i] not in results:
+                     similarity_max = similarity
+                     position_max = positions[i]
+             results.append(position_max)
+@@ -62,4 +62,3 @@ if __name__ == "__main__":
+     print(f"运行时间: {end_time - start_time:.4f} 秒")
+ 
+     print(results)
+-
+diff --git a/gen_word_img.py b/gen_word_img.py
+index b53ec95..cff0b68 100644
+--- a/gen_word_img.py
++++ b/gen_word_img.py
+@@ -1,14 +1,14 @@
+ import os
+ from PIL import Image, ImageDraw, ImageFont
+ 
+-def generate_character_image(character, font_path = 'WenQuanZhengHei.ttf', size=(32, 32), font_size=25):
++def generate_character_image(character, font_path = './Captcha_Identifier/WenQuanZhengHei.ttf', size=(32, 32), font_size=25):
+ 
+     image = Image.new('RGB', size, (255, 255, 255))
+-    
++
+     draw = ImageDraw.Draw(image)
+-    
++
+     font = ImageFont.truetype(font_path, font_size)
+-    
++
+     bbox = draw.textbbox((0, 0), character, font=font)
+     text_width = bbox[2] - bbox[0]
+     text_height = bbox[3] - bbox[1]
+@@ -44,4 +44,3 @@ if __name__ == '__main__':
+         os.makedirs(os.path.dirname(output_path), exist_ok=True)
+         # 保存图像
+         image.save(output_path)
+-
+diff --git a/siamese_predict.py b/siamese_predict.py
+index baf8312..f07f527 100644
+--- a/siamese_predict.py
++++ b/siamese_predict.py
+@@ -5,22 +5,20 @@ from PIL import Image
+ 
+ import sys
+ import os
+-# 丑陋至极
+-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Siamese_pytorch')))
+ 
+-from Siamese_pytorch.nets.siamese import Siamese as siamese
+-from Siamese_pytorch.utils.utils import letterbox_image, preprocess_input, cvtColor
++from Captcha_Identifier.Siamese_pytorch.nets.siamese import Siamese as siamese
++from Captcha_Identifier.Siamese_pytorch.utils.utils import letterbox_image, preprocess_input, cvtColor
+ 
+ class Siamese(object):
+ 
+     def __init__(self, **kwargs):
+-        
++
+         device  = torch.device('cpu')
+         model   = siamese([105, 105])
+-        model.load_state_dict(torch.load("models/siamese.pth", map_location=device))
++        model.load_state_dict(torch.load("./Captcha_Identifier/models/siamese.pth", map_location=device))
+         self.net = model.eval()
+ 
+-    
++
+     def letterbox_image(self, image, size):
+ 
+         image   = image.convert("RGB")
+@@ -40,7 +38,7 @@ class Siamese(object):
+ 
+         image_1 = letterbox_image(cvtColor(image_1), [105, 105], False)
+         image_2 = letterbox_image(cvtColor(image_2), [105, 105], False)
+-        
++
+         photo_1  = preprocess_input(np.array(image_1, np.float32))
+         photo_2  = preprocess_input(np.array(image_2, np.float32))
+ 
+@@ -52,4 +50,3 @@ class Siamese(object):
+             output = torch.nn.Sigmoid()(output)
+ 
+         return output
+-
+diff --git a/word_detect.py b/word_detect.py
+index 95a3671..1807ced 100644
+--- a/word_detect.py
++++ b/word_detect.py
+@@ -5,12 +5,10 @@ import base64
+ 
+ import sys
+ import os
+-# 丑陋至极
+-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'yolov5')))
+ 
+-from yolov5.models.common import DetectMultiBackend
+-from yolov5.utils.augmentations import letterbox
+-from yolov5.utils.general import (
++from Captcha_Identifier.yolov5.models.common import DetectMultiBackend
++from Captcha_Identifier.yolov5.utils.augmentations import letterbox
++from Captcha_Identifier.yolov5.utils.general import (
+     cv2,
+     non_max_suppression,
+     scale_boxes,
+@@ -20,9 +18,9 @@ from yolov5.utils.general import (
+ class WordDetector(object):
+ 
+     def __init__(self, **kwargs):
+-        
++
+         device = torch.device('cpu')
+-        self.model = DetectMultiBackend("models/word_detect.pt", device=device, dnn=False, data="captcha.yaml", fp16=False)
++        self.model = DetectMultiBackend("./Captcha_Identifier/models/word_detect.pt", device=device, dnn=False, data="captcha.yaml", fp16=False)
+         imgsz = (640, 640)  # check image size
+         self.model.warmup(imgsz=(1, 3, *imgsz))  # warmup
+ 
+@@ -58,4 +56,3 @@ class WordDetector(object):
+                 results.append([t.item() for t in xyxy])
+ 
+         return results
+-
+diff --git a/yolov5/models/common.py b/yolov5/models/common.py
+index 8ad53d5..4f4ce03 100644
+--- a/yolov5/models/common.py
++++ b/yolov5/models/common.py
+@@ -35,9 +35,9 @@ except (ImportError, AssertionError):
+ 
+ from ultralytics.utils.plotting import Annotator, colors, save_one_box
+ 
+-from utils import TryExcept
+-from utils.dataloaders import exif_transpose, letterbox
+-from utils.general import (
++from Captcha_Identifier.yolov5.utils import TryExcept
++from Captcha_Identifier.yolov5.utils.dataloaders import exif_transpose, letterbox
++from Captcha_Identifier.yolov5.utils.general import (
+     LOGGER,
+     ROOT,
+     Profile,
+@@ -54,7 +54,7 @@ from utils.general import (
+     xyxy2xywh,
+     yaml_load,
+ )
+-from utils.torch_utils import copy_attr, smart_inference_mode
++from Captcha_Identifier.yolov5.utils.torch_utils import copy_attr, smart_inference_mode
+ 
+ 
+ def autopad(k, p=None, d=1):
+@@ -473,7 +473,7 @@ class DetectMultiBackend(nn.Module):
+         #   TensorFlow Lite:                *.tflite
+         #   TensorFlow Edge TPU:            *_edgetpu.tflite
+         #   PaddlePaddle:                   *_paddle_model
+-        from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
++        from Captcha_Identifier.yolov5.models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
+ 
+         super().__init__()
+         w = str(weights[0] if isinstance(weights, list) else weights)
+@@ -778,8 +778,8 @@ class DetectMultiBackend(nn.Module):
+         Example: path='path/to/model.onnx' -> type=onnx
+         """
+         # types = [pt, jit, onnx, xml, engine, coreml, saved_model, pb, tflite, edgetpu, tfjs, paddle]
+-        from export import export_formats
+-        from utils.downloads import is_url
++        from Captcha_Identifier.yolov5.export import export_formats
++        from Captcha_Identifier.yolov5.utils.downloads import is_url
+ 
+         sf = list(export_formats().Suffix)  # export suffixes
+         if not is_url(p, check=False):
+diff --git a/yolov5/models/experimental.py b/yolov5/models/experimental.py
+index ab9b0ed..0562d8d 100644
+--- a/yolov5/models/experimental.py
++++ b/yolov5/models/experimental.py
+@@ -7,7 +7,7 @@ import numpy as np
+ import torch
+ import torch.nn as nn
+ 
+-from utils.downloads import attempt_download
++from Captcha_Identifier.yolov5.utils.downloads import attempt_download
+ 
+ 
+ class Sum(nn.Module):
+diff --git a/yolov5/utils/augmentations.py b/yolov5/utils/augmentations.py
+index af4c405..3aa9ad0 100644
+--- a/yolov5/utils/augmentations.py
++++ b/yolov5/utils/augmentations.py
+@@ -10,8 +10,8 @@ import torch
+ import torchvision.transforms as T
+ import torchvision.transforms.functional as TF
+ 
+-from utils.general import LOGGER, check_version, colorstr, resample_segments, segment2box, xywhn2xyxy
+-from utils.metrics import bbox_ioa
++from Captcha_Identifier.yolov5.utils.general import LOGGER, check_version, colorstr, resample_segments, segment2box, xywhn2xyxy
++from Captcha_Identifier.yolov5.utils.metrics import bbox_ioa
+ 
+ IMAGENET_MEAN = 0.485, 0.456, 0.406  # RGB mean
+ IMAGENET_STD = 0.229, 0.224, 0.225  # RGB standard deviation
+diff --git a/yolov5/utils/dataloaders.py b/yolov5/utils/dataloaders.py
+index 00e9816..c189c08 100644
+--- a/yolov5/utils/dataloaders.py
++++ b/yolov5/utils/dataloaders.py
+@@ -26,7 +26,7 @@ from PIL import ExifTags, Image, ImageOps
+ from torch.utils.data import DataLoader, Dataset, dataloader, distributed
+ from tqdm import tqdm
+ 
+-from utils.augmentations import (
++from Captcha_Identifier.yolov5.utils.augmentations import (
+     Albumentations,
+     augment_hsv,
+     classify_albumentations,
+@@ -36,7 +36,7 @@ from utils.augmentations import (
+     mixup,
+     random_perspective,
+ )
+-from utils.general import (
++from Captcha_Identifier.yolov5.utils.general import (
+     DATASETS_DIR,
+     LOGGER,
+     NUM_THREADS,
+@@ -55,7 +55,7 @@ from utils.general import (
+     xywhn2xyxy,
+     xyxy2xywhn,
+ )
+-from utils.torch_utils import torch_distributed_zero_first
++from Captcha_Identifier.yolov5.utils.torch_utils import torch_distributed_zero_first
+ 
+ # Parameters
+ HELP_URL = "See https://docs.ultralytics.com/yolov5/tutorials/train_custom_data"
+diff --git a/yolov5/utils/general.py b/yolov5/utils/general.py
+index 8c0b2fc..f2cda29 100644
+--- a/yolov5/utils/general.py
++++ b/yolov5/utils/general.py
+@@ -45,9 +45,9 @@ except (ImportError, AssertionError):
+ 
+ from ultralytics.utils.checks import check_requirements
+ 
+-from utils import TryExcept, emojis
+-from utils.downloads import curl_download, gsutil_getsize
+-from utils.metrics import box_iou, fitness
++from Captcha_Identifier.yolov5.utils import TryExcept, emojis
++from Captcha_Identifier.yolov5.utils.downloads import curl_download, gsutil_getsize
++from Captcha_Identifier.yolov5.utils.metrics import box_iou, fitness
+ 
+ FILE = Path(__file__).resolve()
+ ROOT = FILE.parents[1]  # YOLOv5 root directory
+diff --git a/yolov5/utils/metrics.py b/yolov5/utils/metrics.py
+index e8dc9df..931cc99 100644
+--- a/yolov5/utils/metrics.py
++++ b/yolov5/utils/metrics.py
+@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
+ import numpy as np
+ import torch
+ 
+-from utils import TryExcept, threaded
++from Captcha_Identifier.yolov5.utils import TryExcept, threaded
+ 
+ 
+ def fitness(x):
+diff --git a/yolov5/utils/torch_utils.py b/yolov5/utils/torch_utils.py
+index 8bf6585..d70dbb4 100644
+--- a/yolov5/utils/torch_utils.py
++++ b/yolov5/utils/torch_utils.py
+@@ -17,7 +17,7 @@ import torch.nn as nn
+ import torch.nn.functional as F
+ from torch.nn.parallel import DistributedDataParallel as DDP
+ 
+-from utils.general import LOGGER, check_version, colorstr, file_date, git_describe
++from Captcha_Identifier.yolov5.utils.general import LOGGER, check_version, colorstr, file_date, git_describe
+ 
+ LOCAL_RANK = int(os.getenv("LOCAL_RANK", -1))  # https://pytorch.org/docs/stable/elastic/run.html
+ RANK = int(os.getenv("RANK", -1))
