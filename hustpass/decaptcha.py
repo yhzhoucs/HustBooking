@@ -2,15 +2,16 @@
 The whole script is extracted from https://github.com/MarvinTerry/HustLogin/blob/main/hust_login/decaptcha.py
 """
 
+import logging
 from io import BytesIO
-from logging import root as log
 
 import pytesseract
 from PIL import Image
 
+logger = logging.getLogger(__name__)
+
 
 def decaptcha(img_content):
-    log.debug("decaptching...")
     img_list = []
     with Image.open(BytesIO(img_content)) as img_gif:
         for i in range(img_gif.n_frames):
@@ -26,10 +27,9 @@ def decaptcha(img_content):
             img_merge, config="-c tessedit_char_whitelist=0123456789 --psm 6"
         )
     except pytesseract.TesseractNotFoundError:
-        log.fatal("tesseract is not installed !!", exc_info=True)
+        logger.exception("tesseract 没有安装！")
         raise EnvironmentError(
-            "USE sudo apt install tesseract-ocr OR go to https://tesseract-ocr.github.io/tessdoc/Downloads.html"
+            "请安装 tesseract-ocr ，可参考 https://tesseract-ocr.github.io/tessdoc/Downloads.html"
         )
-    log.debug("captcha_code:{}".format(captcha_code.strip()))
-    # img_merge.save('./src/decaptcha/blended.png')
+    logger.info("OCR结果：{}".format(captcha_code.strip()))
     return captcha_code
