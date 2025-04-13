@@ -1,6 +1,8 @@
 param(
     [Parameter(Mandatory=$false, HelpMessage='Just use this script to clean cache')]
     [switch]$Clean=$false,
+    [Parameter(Mandatory=$false, HelpMessage='Prepare environment')]
+    [switch]$Prepare=$false,
     [Parameter(Mandatory=$false, HelpMessage='Run python script')]
     [switch]$StartBooking=$false
 )
@@ -36,7 +38,7 @@ function Install-PythonEnv {
     & "$PythonPath/python.exe" "$PythonPath/get-pip.py" --no-warn-script-location
 
     # install requirements
-    & "$PythonPath/Scripts/pip.exe" install -r requirements.txt --no-warn-script-location
+    & "$PythonPath/Scripts/pip.exe" install -r requirements-win.txt --no-warn-script-location
 
     Remove-Item -Path './embeddable-python.zip'
 }
@@ -114,6 +116,13 @@ if ($Clean) {
 if ($StartBooking) {
     $pythonExe = Join-Path -Path $pythonPath -ChildPath 'python.exe'
     Run-PythonScript $pythonExe (Join-Path $pwd.Path 'main.py')
+    exit 0
+}
+
+if (-not $Prepare) {
+    Print-Msg "Nothing to do, Use `Get-Help ./auto.ps1` to see help"
+    Print-Msg "Exiting..."
+    exit 0
 }
 
 $pythonAlreadyExists = (Test-Path -Path $pythonPath) `
