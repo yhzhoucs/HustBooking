@@ -1,5 +1,8 @@
 import copy
+import datetime
 import logging
+import time
+from datetime import datetime, timedelta
 
 import yaml
 
@@ -16,6 +19,9 @@ def load_settings():
     user = {"username": y["username"], "password": y["password"]}
     if "payment" not in y.keys():
         raise Exception("请在 booking.yaml 中填写支付方式")
+    schedule_setting = {"enable": False, "time": None, "login_delta": 0}
+    if "schedule" in y.keys():
+        schedule_setting.update(y["schedule"])
     payment = y["payment"]
     items_needed = [
         "date",
@@ -38,7 +44,17 @@ def load_settings():
         for k, v in y[variant].items():
             cloned[k] = v
         settings.append(cloned)
-    return user, settings
+    return user, settings, schedule_setting
+
+
+def get_time_countdown(target_time, delta_minutes=0):
+    t = datetime.strptime(target_time, "%H:%M:%S").time()
+    t = datetime.combine(datetime.now().date(), t)
+    if delta_minutes != 0:
+        t += timedelta(minutes=delta_minutes)
+    if t < datetime.now():
+        return 0
+    return (t - datetime.now()).seconds
 
 
 if __name__ == "__main__":
@@ -49,10 +65,20 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     # 1. load settings
     try:
-        user, settings = load_settings()
+        user, settings, schedule_setting = load_settings()
     except Exception:
         logger.exception("读取 booking.yaml 失败")
         exit(-1)
+
+    login_countdown = 0
+    if schedule_setting["enable"]:
+        login_countdown = get_time_countdown(
+            schedule_setting["time"], schedule_setting["login_delta"]
+        )
+
+    if login_countdown > 0:
+        logger.info("距离登录还有 {} 秒".format(login_countdown))
+        time.sleep(login_countdown)
 
     # 2. login to hustpass
     target_url = "http://pecg.hust.edu.cn/cggl/index1"
@@ -68,8 +94,20 @@ if __name__ == "__main__":
         else:
             break
     else:
-        logger.critical("HustPass {} 次登录尝试均失败".format(trying_times))
+        logger.critical(
+            "HustPass {} 次seperate requirements for Windows登录尝试均失败".format(
+                trying_times
+            )
+        )
         exit(-1)
+
+    booking_countdown = 0
+    if schedule_setting["enable"]:
+        booking_countdown = get_time_countdown(schedule_setting["time"])
+
+    if booking_countdown > 0:
+        logger.info("距离预约还有 {} 秒".format(booking_countdown))
+        time.sleep(booking_countdown)
 
     # 3. booking alongside settings
     for setting in settings:

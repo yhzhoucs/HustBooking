@@ -1,9 +1,9 @@
 import base64
 import json
 import logging
+import os
 import random
 import time
-import os
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
@@ -116,13 +116,14 @@ class ClickWordDecaptcha:
         locator = None
         if os.name == "nt":
             import pathlib
+
             temp = pathlib.PosixPath
             pathlib.PosixPath = pathlib.WindowsPath
             locator = CaptchaLocator()
             pathlib.PosixPath = temp
         else:
             locator = CaptchaLocator()
-        
+
         start_time = time.time()
         results = locator.run(base64_img, word_list)
         end_time = time.time()
