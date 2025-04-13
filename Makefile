@@ -1,3 +1,5 @@
+PYTHON := python
+
 CAPTCHA_IDENTIFIER_URL := https://github.com/scwang98/Captcha_Identifier/archive/main.zip
 
 .DEFAULT_GOAL := help
@@ -13,6 +15,7 @@ endef
 help:
 	@echo "Usage: "
 	@echo "  make prepare               Download and patch dependencies"
+	@echo "  make book                  Run booking script"
 	@echo "  make clean                 Remove downloaded dependencies"
 
 zips:
@@ -30,6 +33,12 @@ Captcha_Identifier: zips/Captcha_Identifier.zip
 	git apply --directory Captcha_Identifier ./patches/Captcha_Identifier-001-fix-integration.patch
 
 prepare: Captcha_Identifier
+
+check_tesseract:
+	@which tesseract > /dev/null || (echo "Tesseract is not installed" && exit 1)
+
+book: check_tesseract
+	$(PYTHON) main.py
 
 clean:
 	rm -rf Captcha_Identifier zips
