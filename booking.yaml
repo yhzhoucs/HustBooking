@@ -3,7 +3,7 @@ password: "Your Password"
 payment: "-1" # -1: 电子账户支付，-2：统一支付
 schedule:
   enable: true
-  time: "21:59:20"
+  time: "08:00:00"
   login_delta: -1 # minutes
 default:
   date: "2025-04-14"
