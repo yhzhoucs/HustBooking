@@ -9,7 +9,7 @@ from hustpass.login import login_hustpass
 
 def load_settings():
     settings = []
-    with open("booking.yaml", "r") as f:
+    with open("booking.yaml", "r", encoding="UTF-8") as f:
         y = yaml.safe_load(f)
     if "username" not in y.keys() or "password" not in y.keys():
         raise Exception("请在 booking.yaml 中填写学号与密码")

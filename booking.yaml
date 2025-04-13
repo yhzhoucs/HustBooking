@@ -2,13 +2,13 @@ username: "Your Student ID"
 password: "Your Password"
 payment: "-1" # -1: 电子账户支付，-2：统一支付
 default:
-  date: "2025-04-13"
-  starttime: "17:00:00"
-  endtime: "18:00:00"
-  changdibh: 122
-  choosetime: 608
+  date: "2025-04-14"
+  starttime: "08:00:00"
+  endtime: "09:00:00"
+  changdibh: 45
+  choosetime: 110
   partnerCardtype: 1
 option1:
-  choosetime: 609
+  choosetime: 133
 option2:
-  choosetime: 610
+  choosetime: 215
