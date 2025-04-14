@@ -1,13 +1,9 @@
 param(
     [Parameter(Mandatory=$false, HelpMessage='Just use this script to clean cache')]
-    [switch]$Clean=$false,
-    [Parameter(Mandatory=$false, HelpMessage='Prepare environment')]
-    [switch]$Prepare=$false,
-    [Parameter(Mandatory=$false, HelpMessage='Run python script')]
-    [switch]$StartBooking=$false
+    [switch]$Clean=$false
 )
 
-function Print-Msg {
+function Write-Msg {
     param ( [Parameter(Mandatory=$true, HelpMessage='String to output')][string]$msg, [string]$color = "Green" )
     Write-Host ('{0}' -f $msg) -ForegroundColor $color
 }
@@ -43,7 +39,7 @@ function Install-PythonEnv {
     Remove-Item -Path './embeddable-python.zip'
 }
 
-function Fetch-Dependency {
+function Install-Dependency {
     param(
         [Parameter(Mandatory=$true, HelpMessage='Dependency url')]
         [string]$Url,
@@ -80,24 +76,6 @@ function Add-PythonSysPath {
     Add-Content -Path $pthPath -Value $fullPath
 }
 
-function Run-PythonScript {
-    [CmdletBinding()]
-    param(
-        [Parameter(Position = 0, Mandatory = 1)][string]$PythonExe,
-        [Parameter()][string]$errorMessage,
-        [parameter(ValueFromRemainingArguments = $true)]
-        [string[]]$Passthrough
-    )
-    & $PythonExe @Passthrough
-    if ($lastexitcode -ne 0) {
-        if (!($errorMessage)) {
-          throw ('Exec: Error executing command {0} with arguments ''{1}''' -f $cmd, "$Passthrough")
-        } else {
-          throw ('Exec: ' + $errorMessage)
-        }
-    }
-}
-
 $pythonUrl = 'https://www.python.org/ftp/python/3.10.9/python-3.10.9-embed-amd64.zip'
 $pipUrl = 'https://bootstrap.pypa.io/get-pip.py'
 $pythonPath = 'python310'
@@ -107,37 +85,17 @@ $captchaIdentifierPatchPath = './patches/Captcha_Identifier-001-fix-integration.
 $captchaIdentifierPath = 'Captcha_Identifier'
 
 if ($Clean) {
-    Print-Msg "Cleaning up..."
+    Write-Msg "Cleaning up..."
     Remove-Item -Path $pythonPath,$captchaIdentifierPath -Force -Recurse -ErrorAction SilentlyContinue
     Remove-Item -Path '__pycache__' -Force -Recurse -ErrorAction SilentlyContinue
     exit 0
 }
 
-if ($StartBooking) {
-    $pythonExe = Join-Path -Path $pythonPath -ChildPath 'python.exe'
-    Run-PythonScript $pythonExe (Join-Path $pwd.Path 'main.py')
-    exit 0
-}
+Remove-Item $pythonPath -Force -Recurse -ErrorAction SilentlyContinue
+Write-Msg "Preparing python environment..."
+Install-PythonEnv -pythonUrl $pythonUrl -pipUrl $pipUrl -pythonPath $pythonPath
+Add-PythonSysPath -PythonPath $pythonPath -PathToAdd $pwd.Path
 
-if (-not $Prepare) {
-    Print-Msg "Nothing to do, Use `Get-Help ./auto.ps1` to see help"
-    Print-Msg "Exiting..."
-    exit 0
-}
-
-$pythonAlreadyExists = (Test-Path -Path $pythonPath) `
-    -and ((Get-ChildItem -Path $pythonPath -Filter '*.exe') | Measure-Object).Count -gt 0
-if (-not $pythonAlreadyExists) {
-    Remove-Item $pythonPath -Force -Recurse -ErrorAction SilentlyContinue
-    Print-Msg "Preparing python environment..."
-    Install-PythonEnv -pythonUrl $pythonUrl -pipUrl $pipUrl -pythonPath $pythonPath
-    Add-PythonSysPath -PythonPath $pythonPath -PathToAdd $pwd.Path
-}
-
-$captchaIdentifierAlreadyExists = (Test-Path -Path $captchaIdentifierPath) `
-    -and ((Get-ChildItem -Path $captchaIdentifierPath -Filter '*.py') | Measure-Object).Count -gt 0
-if (-not $captchaIdentifierAlreadyExists) {
-    Remove-Item $captchaIdentifierPath -Force -Recurse -ErrorAction SilentlyContinue
-    Print-Msg "Fetching Captcha_Identifier from $captchaIdentifierUrl"
-    Fetch-Dependency -Url $captchaIdentifierUrl -Path $captchaIdentifierPath -PatchPath $captchaIdentifierPatchPath
-}
+Remove-Item $captchaIdentifierPath -Force -Recurse -ErrorAction SilentlyContinue
+Write-Msg "Fetching Captcha_Identifier from $captchaIdentifierUrl"
+Install-Dependency -Url $captchaIdentifierUrl -Path $captchaIdentifierPath -PatchPath $captchaIdentifierPatchPath
