@@ -15,7 +15,7 @@
 ### Windows
 
 - Tesseract
-- PowerShell
+- PowerShell 7
 - git
 
 ## 环境准备
@@ -66,9 +66,15 @@ make prepare
 
 ### Windows
 
-确保所有代码均在 **PowerShell** 中运行。
+确保所有代码均在 **PowerShell 7** 中运行。
 
-首先，拉取代码：
+你可以通过 `winget` 来 [安装 PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.5)
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
+启动 PowerShell 7 ，拉取代码：
 
 ```powershell
 git clone https://github.com/yhzhoucs/HustBooking.git
@@ -90,7 +96,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ## 编写预定配置
 
-所有的预定配置均在 `booking.yaml` 文件中。下面对配置项进行说明。
+所有的预定配置均在 `booking.yaml` 文件中。主体配置项为：
 
 | 配置名    | 说明         |
 | --------- | ------------ |
@@ -101,64 +107,14 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 | default   | 默认预定配置 |
 | option`N` | 可选预定配置 |
 
-支持方式有两种选择
+详细配置说明参见 [这里](./docs/details.md) 。
 
-| 值  | 含义         |
-| --- | ------------ |
-| -1  | 电子账户支付 |
-| -2  | 统一支付     |
-
-schedule 为定时执行预定任务的相关配置，其下的配置项含义为：
-
-| 配置名      | 说明                                           |
-| ----------- | ---------------------------------------------- |
-| enable      | 是否启用，值为 true 或 false                   |
-| time        | 发起预定请求的时间，形如 "08:00:00"            |
-| login_delta | 发起预定之前多长时间登录系统，-1 为提前 1 分钟 |
-
-**注意：** 这里的定时执行只能设置为 **当天** 的时间，如果想跨越多天（比如想设置在明天某个时间启动预定），请结合系统定时任务工具。参考 [启动预定](#启动预定) 。之所以采用这种方式有两个原因：
+**注意1：** 这里的定时执行只能设置为 **当天** 的时间，如果想跨越多天（比如想设置在明天某个时间启动预定），请结合系统定时任务工具，参考 [启动预定](#启动预定) 。之所以采用这种方式有两个原因：
 
 1. 脚本内的定时完全依赖计算出的秒数差，然后 sleep 特定秒数到预定时间，这样可能会造成时间误差
 2. 长时间的定时任务交给操作系统是常用且专业的做法
 
-default 是预定体育场馆必要的配置单，其下的配置项含义为：
-
-| 配置名          | 说明                 |
-| --------------- | -------------------- |
-| date            | 预定日期             |
-| starttime       | 预定时间段的开始时间 |
-| endtime         | 预定时间段的结束时间 |
-| changdibh       | 场地编号             |
-| choosetime      | 预定区域             |
-| partnerCardtype | 同伴类型             |
-
-场地编号可取的值与含义为：
-
-| 值  | 含义                 |
-| --- | -------------------- |
-| 45  | 光谷体育馆羽毛球场   |
-| 122 | 光谷体育馆乒乓球场   |
-| 126 | 韵苑体育馆乒乓球场   |
-| 74  | 东区操场韵苑网球场   |
-| 73  | 中心区操场沁苑网球场 |
-| 75  | 中心区操作沙地网球场 |
-| 72  | 西区操场网球场       |
-| 69  | 西边体育馆羽毛球     |
-| 124 | 西边体育馆乒乓球     |
-| 96  | 游泳馆游泳池         |
-| 117 | 游泳馆二楼羽毛球     |
-
-预定区域映射关系暂时没有发现规律，参考 [获取预定区域编号](#获取预定区域编号) 来获取。有更好想法的欢迎 Pull Request 。
-
-同伴类型可取的值与含义为：
-
-| 值  | 含义     |
-| --- | -------- |
-| 1   | 学生     |
-| 2   | 教职工   |
-| 3   | 校外人员 |
-
-option`N` 为默认配置预定失败后的备选项，N=1,2,3... ，预定脚本将逐个尝试。option`N` 下的配置项将替换 default 中的同名配置项，组成一个新的配置清单。因此，你可以**只写与 default 配置清单中不同的配置项** 。
+**注意2：** option`N` 为默认配置预定失败后的备选项，N=1,2,3... ，预定脚本将逐个尝试。option`N` 下的配置项将替换 default 中的同名配置项，组成一个新的配置清单。因此，你可以**只写与 default 配置清单中不同的配置项** 。
 
 ## 启动预定
 
@@ -212,9 +168,13 @@ Windows 上的定时启动使用自带的任务计划程序来定时。具体的
 ```powershell
 Get-Help ./scripts/schedule.ps1 # 获取帮助
 ./scripts/schedule.ps1 -ScheduleTime "2025-04-14 16:00" # 在2025年4月14日16时00分运行
+# 使用最高优先级运行（需要管理员权限）
+./scripts/schedule.ps1 -ScheduleTime "2025-04-14 16:00" -Sudo
 ```
 
-**注意：** 如果你的 Tesseract 并非安装在默认路径，则需要修改这两个 PowerShell 脚本中的 `$tesseractPath` 变量。
+**注意1：** 如果你的 PowerShell 7 不在系统环境变量中，则需要修改 schedule.ps1 中的 `$pwsh` 变量。
+
+**注意2：** 如果你的 Tesseract 并非安装在默认路径，则需要修改这两个 PowerShell 脚本中的 `$tesseractPath` 变量。
 
 ### 定时任务的注意事项
 
@@ -237,22 +197,6 @@ Get-Help ./scripts/schedule.ps1 # 获取帮助
 4. 保持登录为发送预定请求前1分钟不变，即 `schedule[login_deal]` 为 _-1_
 
 这样脚本会在明天上午7点55分被系统启动，即刻进行模型预热，等待到7:59时进行帐号登陆，并在8点整执行预定操作。
-
-## 获取预定区域编号
-
-目前获取区域编号的方法是采用浏览器的开发者工具。
-
-首先，进到区域选择页面，在你想预定的区域上右键-检查。
-
-找到形如下面所示的 HTML 元素，其中的 `pian="XXX"` 即为预定区域的编号。
-
-```html
-<td
-  class="getajax appointmented"
-  title="光谷体育馆 主馆羽毛球场-普通区1(08:00:00-10:00:00)"
-  pian="110"
-></td>
-```
 
 ## 致谢
 
