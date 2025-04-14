@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory=$true, HelpMessage="Schedule time, e.g. 2025-04-14 08:00:00")]
-    [string]$scheduleTime
+    [string]$ScheduleTime
 )
 
 $pythonPath = (Get-Item -Path 'python310').FullName
@@ -19,7 +19,7 @@ $action1 = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoExit 
 $action2 = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-Command `"Unregister-ScheduledTask -TaskName HustBooking -Confirm:`$false`""
 $triggerParams = @{
     Once = $true
-    At = Get-Date $scheduleTime -Format "yyyy-MM-dd HH:mm:ss"
+    At = Get-Date $ScheduleTime -Format "yyyy-MM-dd HH:mm:ss"
 }
 $trigger = New-ScheduledTaskTrigger @triggerParams
 $settings = New-ScheduledTaskSettingsSet -RunOnlyIfNetworkAvailable
