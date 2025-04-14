@@ -115,8 +115,8 @@ class ClickWordDecaptcha:
     def capture_positions(base64_img, word_list):
         locator = None
         if os.name == "nt":
+            # fix from https://stackoverflow.com/questions/57286486/i-cant-load-my-model-because-i-cant-put-a-posixpath
             import pathlib
-
             temp = pathlib.PosixPath
             pathlib.PosixPath = pathlib.WindowsPath
             locator = CaptchaLocator()
