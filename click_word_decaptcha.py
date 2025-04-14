@@ -13,6 +13,30 @@ from Captcha_Identifier.captcha_locator import CaptchaLocator
 
 logger = logging.getLogger(__name__)
 
+locator = None
+def pre_init():
+    global locator
+    start_time = time.time()
+    if os.name == "nt":
+        # fix from https://stackoverflow.com/questions/57286486/i-cant-load-my-model-because-i-cant-put-a-posixpath
+        import pathlib
+        temp = pathlib.PosixPath
+        pathlib.PosixPath = pathlib.WindowsPath
+        locator = CaptchaLocator()
+        pathlib.PosixPath = temp
+    else:
+        locator = CaptchaLocator()
+    end_time = time.time()
+    logger.info(
+        f"模型加载成功，时间: {end_time - start_time:.4f} 秒")
+
+
+def warmup():
+    with open("./docs/warmup.png", "rb") as f:
+        image = f.read()
+    img_base64 = base64.b64encode(image).decode("ascii")
+    locator.run(img_base64, ["何", "旧", "士"])
+
 
 class ClickWordDecaptcha:
     def __init__(self, session: Session, trying_times: int = 3):
@@ -113,17 +137,6 @@ class ClickWordDecaptcha:
 
     @staticmethod
     def capture_positions(base64_img, word_list):
-        locator = None
-        if os.name == "nt":
-            # fix from https://stackoverflow.com/questions/57286486/i-cant-load-my-model-because-i-cant-put-a-posixpath
-            import pathlib
-            temp = pathlib.PosixPath
-            pathlib.PosixPath = pathlib.WindowsPath
-            locator = CaptchaLocator()
-            pathlib.PosixPath = temp
-        else:
-            locator = CaptchaLocator()
-
         start_time = time.time()
         results = locator.run(base64_img, word_list)
         end_time = time.time()
@@ -143,9 +156,7 @@ class ClickWordDecaptcha:
 
 
 if __name__ == "__main__":
-    locator = CaptchaLocator()
-
-    with open("input.png", "rb") as f:
+    with open("./docs/input.png", "rb") as f:
         image = f.read()
 
     img_base64 = base64.b64encode(image).decode("ascii")
