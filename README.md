@@ -48,6 +48,14 @@ sudo pacman -Syu
 sudo pacman -S tesseract tesseract-data-eng
 ```
 
+安装 at 并启动 atd 守护进程:
+
+```shell
+sudo pacman -S at
+# 启动 atd
+sudo systemctl start atd
+```
+
 最后，准备 Captcha 识别库：
 
 ```shell
@@ -222,7 +230,7 @@ Get-Help ./scripts/schedule.ps1 # 获取帮助
 
 1. 使用定时工具将脚本启动时间设定为提早5分钟，即 _明天上午7点55分_
 2. 在 `booking.yaml` 中设定 `schedule[time]` 为 _08:00:00_
-3. 确保 `booking.yaml` 中定时任务已启动，即 `schedule[enable]` 为 \*true\*\*
+3. 确保 `booking.yaml` 中定时任务已启动，即 `schedule[enable]` 为 _true_
 4. 保持登录为发送预定请求前1分钟不变，即 `schedule[login_deal]` 为 _-1_
 
 这样脚本会在明天上午7点55分被系统启动，即刻进行模型预热，等待到7:59时进行帐号登陆，并在8点整执行预定操作。
@@ -252,4 +260,5 @@ Get-Help ./scripts/schedule.ps1 # 获取帮助
 ## 免责声明
 
 本项目仅供学习交流使用，不得用于任何非法用途。开发本项目只是为了学习验证码识别思路、熟悉 Python 网络库的使用方法，使用本项目进行的任何预定操作均与项目作者无关，由此产生的任何后果由用户自行承担。
+
 您下载本项目的代码即代表您已阅读并同意遵守上述免责声明。
