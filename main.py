@@ -1,21 +1,22 @@
+import base64
 import copy
 import datetime
 import logging
-import time
 import os
-import base64
+import time
 from datetime import datetime, timedelta
 
 import yaml
 
 from book_agent import BookAgent
-from hustpass.login import login_hustpass
 from Captcha_Identifier.captcha_locator import CaptchaLocator
+from hustpass.login import login_hustpass
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 def load_settings():
     settings = []
@@ -70,6 +71,7 @@ def warmup_captcha():
     if os.name == "nt":
         # fix from https://stackoverflow.com/questions/57286486/i-cant-load-my-model-because-i-cant-put-a-posixpath
         import pathlib
+
         temp = pathlib.PosixPath
         pathlib.PosixPath = pathlib.WindowsPath
         locator = CaptchaLocator()
@@ -80,7 +82,7 @@ def warmup_captcha():
     with open("images/warmup.png", "rb") as f:
         img = f.read()
     img_base64 = base64.b64encode(img).decode("ascii")
-    locator.run(img_base64, ['者', '天', '治'])
+    locator.run(img_base64, ["者", "天", "治"])
 
 
 if __name__ == "__main__":
@@ -91,10 +93,15 @@ if __name__ == "__main__":
         logger.exception("读取 booking.yaml 失败")
         exit(-1)
 
-    if schedule_setting["enable"] and get_time_countdown(schedule_setting["time"], schedule_setting["login_delta"] - 1) > 0:
+    if (
+        schedule_setting["enable"]
+        and get_time_countdown(
+            schedule_setting["time"], schedule_setting["login_delta"] - 1
+        )
+        > 0
+    ):
         logger.info("剩余时间充裕，进行验证码识别热身")
         warmup_captcha()
-        
 
     login_countdown = 0
     if schedule_setting["enable"]:
