@@ -80,6 +80,9 @@ cd HustBooking
 最后使用自动化脚本完成 Python 环境准备（这里使用的是便携版 Python3.10 ）和 Captcha 识别库的下载与配置：
 
 ```powershell
+# 设置 PowerShell 的执行权限
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
 # 如果之前安装失败，请先清理：./prepare.ps1 -Clean
 # 你也可以查看帮助：Get-Help ./prepare.ps1
 ./prepare.ps1
