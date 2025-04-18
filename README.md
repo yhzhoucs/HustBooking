@@ -33,27 +33,49 @@ cd HustBooking
 
 ```shell
 # 这里使用 conda
-conda create -n book python==3.10
-conda activate book
-# 安装 Python 依赖包
-pip install -r ./requirements.txt
+conda create -n hustbooking python=3.10
+conda activate hustbooking
+# 安装依赖
+pip3 install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 安装 Tesseract ：
 
+**Arch Linux**
+
 ```shell
-# 这里只有 Arch Linux 上的安装示例
-# 其他发行版请自行搜索安装
 sudo pacman -Syu
 sudo pacman -S tesseract tesseract-data-eng
 ```
 
+**Gentoo**
+
+```shell
+# 激活 float32 推理与英文识别的 USE
+sudo touch /etc/portage/package.use
+echo -e "app-text/tesseract float32\napp-text/tessdata_fast l10n_en" | sudo tee -a /etc/portage/package.use
+# 安装 tesseract
+sudo emerge --ask app-text/tesseract
+```
+
 安装 at 并启动 atd 守护进程:
+
+**Arch Linux**
 
 ```shell
 sudo pacman -S at
-# 启动 atd
 sudo systemctl start atd
+# 开机启动（可选）
+sudo systemctl enable atd
+```
+
+**Gentoo** (OpenRC)
+
+```shell
+sudo emerge --ask sys-process/at
+sudo rc-service atd start
+# 开机启动（可选）
+sudo rc-update add atd default
 ```
 
 最后，准备 Captcha 识别库：
@@ -140,7 +162,7 @@ at 16:00 04/14/2025 # 在2025年4月14日16时00分运行
 
 ```shell
 cd /home/aozora/repos/HustBooking
-/home/aozora/miniconda3/envs/book/bin/python ./main.py >my.log 2>&1
+/home/aozora/miniconda3/envs/hustbooking/bin/python ./main.py >my.log 2>&1
 # 按 Ctrl+D 结束命令输入
 ```
 

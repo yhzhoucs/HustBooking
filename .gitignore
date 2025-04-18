@@ -5,3 +5,4 @@
 __pycache__
 /*.png
 /python310
+/my.log
