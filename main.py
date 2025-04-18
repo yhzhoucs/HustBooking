@@ -1,8 +1,6 @@
-import base64
 import copy
 import datetime
 import logging
-import os
 import time
 from datetime import datetime, timedelta
 
@@ -55,14 +53,30 @@ def load_settings():
     return user, settings, schedule_setting
 
 
-def get_time_countdown(target_time, delta_minutes=0):
+def get_float_time(target_time, delta_minutes=0):
     t = datetime.strptime(target_time, "%H:%M:%S").time()
     t = datetime.combine(datetime.now().date(), t)
     if delta_minutes != 0:
         t += timedelta(minutes=delta_minutes)
-    if t < datetime.now():
-        return 0
-    return (t - datetime.now()).seconds
+    return t.timestamp()
+
+
+def schedule_task(target, f):
+    # high precision timer with multi-level waiting
+
+    while True:
+        current = datetime.now().timestamp()
+        remaining = target - current
+        if remaining <= 0:
+            return f()
+
+        if remaining > 1:
+            time.sleep(remaining * 0.8)
+        else:
+            # busy wait at the last second
+            while datetime.now().timestamp() < target:
+                pass
+            return f()
 
 
 if __name__ == "__main__":
@@ -75,29 +89,35 @@ if __name__ == "__main__":
     except Exception:
         logger.exception("读取 booking.yaml 失败")
         exit(-1)
-    
-    if schedule_setting["enable"] and get_time_countdown(schedule_setting["time"], schedule_setting["login_delta"] - 1) > 0:
+
+    if (
+        schedule_setting["enable"]
+        and get_float_time(
+            schedule_setting["time"], schedule_setting["login_delta"] - 1
+        )
+        > datetime.now().timestamp()
+    ):
         logger.info("时间充裕，开始模型预热")
         warmup()
 
-    login_countdown = 0
-    if schedule_setting["enable"]:
-        login_countdown = get_time_countdown(
-            schedule_setting["time"], schedule_setting["login_delta"]
+    login_float_time = get_float_time(
+        schedule_setting["time"], schedule_setting["login_delta"]
+    )
+    book_float_time = get_float_time(schedule_setting["time"])
+
+    if login_float_time > datetime.now().timestamp():
+        logger.info(
+            "距离登录还有 {} 秒".format(login_float_time - datetime.now().timestamp())
         )
 
-    if login_countdown > 0:
-        logger.info("距离登录还有 {} 秒".format(login_countdown))
-        time.sleep(login_countdown)
+    schedule_task(login_float_time, lambda: None)
 
     # 2. login to hustpass
     target_url = "http://pecg.hust.edu.cn/cggl/index1"
     trying_times = 3
     for _ in range(trying_times):
         try:
-            cookies = login_hustpass(
-                user["username"], user["password"], target_url
-            )
+            cookies = login_hustpass(user["username"], user["password"], target_url)
         except Exception:
             logger.exception("登录 HustPass 失败")
             logger.info("再次尝试")
@@ -111,13 +131,12 @@ if __name__ == "__main__":
         )
         exit(-1)
 
-    booking_countdown = 0
-    if schedule_setting["enable"]:
-        booking_countdown = get_time_countdown(schedule_setting["time"])
+    if book_float_time > datetime.now().timestamp():
+        logger.info(
+            "距离预约还有 {} 秒".format(book_float_time - datetime.now().timestamp())
+        )
 
-    if booking_countdown > 0:
-        logger.info("距离预约还有 {} 秒".format(booking_countdown))
-        time.sleep(booking_countdown)
+    schedule_task(book_float_time, lambda: None)
 
     # 3. booking alongside settings
     for setting in settings:
