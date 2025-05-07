@@ -1,6 +1,6 @@
 PYTHON := python
 
-CAPTCHA_IDENTIFIER_URL := https://github.com/scwang98/Captcha_Identifier/archive/main.zip
+CAPTCHA_IDENTIFIER_URL := https://github.com/scwang98/Captcha_Identifier/archive/refs/heads/main.tar.gz
 
 .DEFAULT_GOAL := help
 
@@ -9,7 +9,7 @@ define DL
 endef
 
 define UNZIP
-	unzip -q $(1) -d $(2)
+	mkdir -p $(2) && tar xf $(1) --strip-components 1 -C $(2)
 endef
 
 help:
@@ -18,18 +18,15 @@ help:
 	@echo "  make book                  Run booking script"
 	@echo "  make clean                 Remove downloaded dependencies"
 
-zips:
-	@mkdir -p zips
+deps:
+	@mkdir -p deps
 
-zips/Captcha_Identifier.zip: zips
+deps/Captcha_Identifier.tar.gz: deps
 	@$(call DL, $(CAPTCHA_IDENTIFIER_URL), $@)
 
-Captcha_Identifier: zips/Captcha_Identifier.zip
+Captcha_Identifier: deps/Captcha_Identifier.tar.gz
 	rm -rf Captcha_Identifier && mkdir Captcha_Identifier
 	@$(call UNZIP, $<, Captcha_Identifier)
-	mv Captcha_Identifier/Captcha_Identifier-main/* Captcha_Identifier/
-	mv Captcha_Identifier/Captcha_Identifier-main/.* Captcha_Identifier/
-	rmdir Captcha_Identifier/Captcha_Identifier-main
 	git apply --directory Captcha_Identifier ./patches/Captcha_Identifier-001-fix-integration.patch
 
 prepare: Captcha_Identifier
@@ -41,4 +38,4 @@ book: check_tesseract
 	$(PYTHON) main.py
 
 clean:
-	rm -rf Captcha_Identifier zips
+	rm -rf Captcha_Identifier deps __pycache__

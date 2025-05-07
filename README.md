@@ -6,11 +6,11 @@
 
 ### Linux
 
-- Python 3.10
+- Python 3.10 及以上
 - GNU Make
 - Tesseract
 - at （用于系统定时任务）
-- git, curl, unzip
+- git, curl, tar
 
 ### Windows
 
@@ -32,11 +32,9 @@ cd HustBooking
 然后，准备 Python 环境：
 
 ```shell
-# 这里使用 conda
-conda create -n hustbooking python=3.10
-conda activate hustbooking
-# 安装依赖
-pip3 install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+python -m venv .venv
+source ./.venv/bin/activate
+pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 安装 Tesseract ：

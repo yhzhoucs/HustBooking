@@ -1,8 +1,8 @@
 /.ropeproject
+/.venv
 /Captcha_Identifier
-/zips
+/deps
 
 __pycache__
-/*.png
 /python310
 /my.log
